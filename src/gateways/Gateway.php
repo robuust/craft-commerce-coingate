@@ -106,7 +106,7 @@ class Gateway extends OffsiteGateway
             return $response;
         }
 
-        $id = \Craft::$app->getRequest()->getParam('order_id');
+        $id = \Craft::$app->getRequest()->getBodyParam('id');
         /** @var OmnipayGateway */
         $gateway = $this->createGateway();
         /** @var PurchaseStatusRequest $request */
