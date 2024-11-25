@@ -8,6 +8,7 @@ use craft\commerce\records\Transaction as TransactionRecord;
 use craft\helpers\App;
 use craft\web\Response;
 use Omnipay\CoinGate\Gateway as OmnipayGateway;
+use Omnipay\CoinGate\Message\PurchaseStatusRequest;
 use Omnipay\Common\AbstractGateway;
 
 /**
@@ -105,9 +106,10 @@ class Gateway extends OffsiteGateway
         }
 
         $id = \Craft::$app->getRequest()->getParam('order_id');
+        /** @var OmnipayGateway */
         $gateway = $this->createGateway();
-        /** @var FetchTransactionRequest $request */
-        $request = $gateway->fetchTransaction(['transactionReference' => $id]);
+        /** @var PurchaseStatusRequest $request */
+        $request = $gateway->getPurchaseStatus(['transactionReference' => $id]);
         $res = $request->send();
 
         if (!$res->isSuccessful()) {
