@@ -1,11 +1,20 @@
-{% from "_includes/forms" import autosuggestField %}
+{% from "_includes/forms" import forms %}
 
-{{ autosuggestField({
-    label: 'API Key'|t('commerce'),
-    id: 'apiKey',
-    class: 'ltr',
-    name: 'apiKey',
-    value: gateway.apiKey,
-    suggestEnvVars: true,
-    errors: gateway.getErrors('apiKey')
+{{ forms.autosuggestField({
+  label: 'API Key'|t('commerce'),
+  id: 'apiKey',
+  class: 'ltr',
+  name: 'apiKey',
+  suggestEnvVars: true,
+  value: gateway.apiKey,
+  errors: gateway.getErrors('apiKey')
+}) }}
+
+{{ forms.booleanMenuField({
+  label: "Test Mode"|t('commerce'),
+  id: 'testMode',
+  name: 'testMode',
+  includeEnvVars: true,
+  value: gateway.useSandboxMode,
+  errors: gateway.getErrors('testMode')
 }) }}

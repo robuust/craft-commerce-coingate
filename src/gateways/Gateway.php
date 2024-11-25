@@ -22,6 +22,11 @@ class Gateway extends OffsiteGateway
      */
     public $apiKey;
 
+    /**
+     * @var bool
+     */
+    public $testMode;
+
     // Public Methods
     // =========================================================================
 
@@ -85,6 +90,7 @@ class Gateway extends OffsiteGateway
         $gateway = static::createOmnipayGateway($this->getGatewayClassName());
 
         $gateway->setApiKey(App::parseEnv($this->apiKey));
+        $gateway->setTestMode(App::parseBooleanEnv($this->testMode));
 
         return $gateway;
     }
