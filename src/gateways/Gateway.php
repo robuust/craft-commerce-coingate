@@ -148,6 +148,14 @@ class Gateway extends OffsiteGateway
     /**
      * {@inheritdoc}
      */
+    public function getTransactionHashFromWebhook(): ?string
+    {
+        return \Craft::$app->getRequest()->getParam('commerceTransactionHash');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function rules(): array
     {
         $rules = parent::rules();
