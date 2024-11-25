@@ -6,7 +6,7 @@ use craft\commerce\models\payments\BasePaymentForm;
 use craft\commerce\models\Transaction;
 use craft\commerce\omnipay\base\OffsiteGateway;
 use craft\helpers\App;
-use Omnipay\Coingate\Gateway as OmnipayGateway;
+use Omnipay\CoinGate\Gateway as OmnipayGateway;
 use Omnipay\Common\AbstractGateway;
 
 /**
