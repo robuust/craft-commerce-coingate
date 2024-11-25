@@ -1,0 +1,11 @@
+{% from "_includes/forms" import autosuggestField %}
+
+{{ autosuggestField({
+    label: 'API Key'|t('commerce'),
+    id: 'apiKey',
+    class: 'ltr',
+    name: 'apiKey',
+    value: gateway.apiKey,
+    suggestEnvVars: true,
+    errors: gateway.getErrors('apiKey')
+}) }}
