@@ -2,8 +2,6 @@
 
 namespace robuust\coingate\gateways;
 
-use craft\commerce\models\payments\BasePaymentForm;
-use craft\commerce\models\Transaction;
 use craft\commerce\omnipay\base\OffsiteGateway;
 use craft\commerce\Plugin;
 use craft\helpers\App;
@@ -60,17 +58,6 @@ class Gateway extends OffsiteGateway
     /**
      * {@inheritdoc}
      */
-    public function populateRequest(array &$request, ?BasePaymentForm $paymentForm = null): void
-    {
-        parent::populateRequest($request, $paymentForm);
-        $request['callback_url'] = $request['notifyUrl'];
-        $request['success_url'] = $request['returnUrl'];
-        $request['cancel_url'] = $request['cancelUrl'];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function rules(): array
     {
         $rules = parent::rules();
@@ -106,16 +93,5 @@ class Gateway extends OffsiteGateway
     protected function getGatewayClassName(): ?string
     {
         return '\\'.OmnipayGateway::class;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function createRequest(Transaction $transaction, ?BasePaymentForm $form = null): mixed
-    {
-        $request = parent::createRequest($transaction, $form);
-        $request['code'] = $transaction->code;
-
-        return $request;
     }
 }
