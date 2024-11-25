@@ -3,8 +3,10 @@
 namespace robuust\coingate\gateways;
 
 use craft\commerce\omnipay\base\OffsiteGateway;
-use craft\commerce\Plugin;
+use craft\commerce\Plugin as Commerce;
+use craft\commerce\records\Transaction as TransactionRecord;
 use craft\helpers\App;
+use craft\web\Response;
 use Omnipay\CoinGate\Gateway as OmnipayGateway;
 use Omnipay\Common\AbstractGateway;
 
@@ -64,6 +66,86 @@ class Gateway extends OffsiteGateway
     }
 
     /**
+     * @return Response
+     *
+     * @throws \Throwable
+     * @throws CurrencyException
+     * @throws OrderStatusException
+     * @throws TransactionException
+     * @throws ElementNotFoundException
+     * @throws Exception
+     * @throws InvalidConfigException
+     */
+    public function processWebHook(): Response
+    {
+        $response = \Craft::$app->getResponse();
+
+        $transactionHash = $this->getTransactionHashFromWebhook();
+        $transaction = Commerce::getInstance()->getTransactions()->getTransactionByHash($transactionHash);
+
+        if (!$transaction) {
+            \Craft::warning('Transaction with the hash “'.$transactionHash.'“ not found.', 'commerce');
+            $response->data = 'ok';
+
+            return $response;
+        }
+
+        // Check to see if a successful purchase child transaction already exist and skip out early if they do
+        $successfulPurchaseChildTransaction = TransactionRecord::find()->where([
+            'parentId' => $transaction->id,
+            'status' => TransactionRecord::STATUS_SUCCESS,
+            'type' => TransactionRecord::TYPE_PURCHASE,
+        ])->count();
+
+        if ($successfulPurchaseChildTransaction) {
+            \Craft::warning('Successful child transaction for “'.$transactionHash.'“ already exists.', 'commerce');
+            $response->data = 'ok';
+
+            return $response;
+        }
+
+        $id = \Craft::$app->getRequest()->getParam('order_id');
+        $gateway = $this->createGateway();
+        /** @var FetchTransactionRequest $request */
+        $request = $gateway->fetchTransaction(['transactionReference' => $id]);
+        $res = $request->send();
+
+        if (!$res->isSuccessful()) {
+            \Craft::warning('CoinGate request was unsuccessful.', 'commerce');
+            $response->data = 'ok';
+
+            return $response;
+        }
+
+        $childTransaction = Commerce::getInstance()->getTransactions()->createTransaction(null, $transaction);
+        $childTransaction->type = $transaction->type;
+
+        if ($res->isPaid()) {
+            $childTransaction->status = TransactionRecord::STATUS_SUCCESS;
+        } elseif ($res->isExpired()) {
+            $childTransaction->status = TransactionRecord::STATUS_FAILED;
+        } elseif ($res->isCancelled()) {
+            $childTransaction->status = TransactionRecord::STATUS_FAILED;
+        } elseif (isset($res->getData()['status']) && 'failed' === $res->getData()['status']) {
+            $childTransaction->status = TransactionRecord::STATUS_FAILED;
+        } else {
+            $response->data = 'ok';
+
+            return $response;
+        }
+
+        $childTransaction->response = $res->getData();
+        $childTransaction->code = $res->getTransactionId();
+        $childTransaction->reference = $res->getTransactionReference();
+        $childTransaction->message = $res->getMessage();
+        Commerce::getInstance()->getTransactions()->saveTransaction($childTransaction);
+
+        $response->data = 'ok';
+
+        return $response;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function rules(): array
@@ -89,7 +171,7 @@ class Gateway extends OffsiteGateway
         $gateway->setTestMode(App::parseBooleanEnv($this->testMode));
 
         // Receive as primary payment currency
-        $currency = Plugin::getInstance()->getPaymentCurrencies()->getPrimaryPaymentCurrencyIso();
+        $currency = Commerce::getInstance()->getPaymentCurrencies()->getPrimaryPaymentCurrencyIso();
         $gateway->setReceiveCurrency($currency);
 
         return $gateway;
