@@ -5,6 +5,7 @@ namespace robuust\coingate\gateways;
 use craft\commerce\models\payments\BasePaymentForm;
 use craft\commerce\models\Transaction;
 use craft\commerce\omnipay\base\OffsiteGateway;
+use craft\commerce\Plugin;
 use craft\helpers\App;
 use Omnipay\CoinGate\Gateway as OmnipayGateway;
 use Omnipay\Common\AbstractGateway;
@@ -91,6 +92,10 @@ class Gateway extends OffsiteGateway
 
         $gateway->setApiKey(App::parseEnv($this->apiKey));
         $gateway->setTestMode(App::parseBooleanEnv($this->testMode));
+
+        // Receive as primary payment currency
+        $currency = Plugin::getInstance()->getPaymentCurrencies()->getPrimaryPaymentCurrencyIso();
+        $gateway->setReceiveCurrency($currency);
 
         return $gateway;
     }
