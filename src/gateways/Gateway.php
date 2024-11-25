@@ -9,6 +9,7 @@ use craft\helpers\App;
 use craft\web\Response;
 use Omnipay\CoinGate\Gateway as OmnipayGateway;
 use Omnipay\CoinGate\Message\PurchaseStatusRequest;
+use Omnipay\CoinGate\Message\PurchaseStatusResponse;
 use Omnipay\Common\AbstractGateway;
 
 /**
@@ -110,6 +111,7 @@ class Gateway extends OffsiteGateway
         $gateway = $this->createGateway();
         /** @var PurchaseStatusRequest $request */
         $request = $gateway->getPurchaseStatus(['transactionReference' => $id]);
+        /** @var PurchaseStatusResponse $res */
         $res = $request->send();
 
         if (!$res->isSuccessful()) {
@@ -124,11 +126,9 @@ class Gateway extends OffsiteGateway
 
         if ($res->isPaid()) {
             $childTransaction->status = TransactionRecord::STATUS_SUCCESS;
-        } elseif ($res->isExpired()) {
-            $childTransaction->status = TransactionRecord::STATUS_FAILED;
         } elseif ($res->isCancelled()) {
             $childTransaction->status = TransactionRecord::STATUS_FAILED;
-        } elseif (isset($res->getData()['status']) && 'failed' === $res->getData()['status']) {
+        } elseif ('failed' === $res->getOrderStatus()) {
             $childTransaction->status = TransactionRecord::STATUS_FAILED;
         } else {
             $response->data = 'ok';
