@@ -2,6 +2,8 @@
 
 namespace robuust\coingate\gateways;
 
+use craft\commerce\base\RequestResponseInterface;
+use craft\commerce\models\Transaction;
 use craft\commerce\omnipay\base\OffsiteGateway;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\records\Transaction as TransactionRecord;
@@ -11,6 +13,7 @@ use Omnipay\CoinGate\Gateway as OmnipayGateway;
 use Omnipay\CoinGate\Message\PurchaseStatusRequest;
 use Omnipay\CoinGate\Message\PurchaseStatusResponse;
 use Omnipay\Common\AbstractGateway;
+use Omnipay\Common\Message\RequestInterface;
 
 /**
  * Coingate gateway.
@@ -57,6 +60,18 @@ class Gateway extends OffsiteGateway
     public function getSettingsHtml(): ?string
     {
         return \Craft::$app->getView()->renderTemplate('commerce-coingate/gatewaySettings', ['gateway' => $this]);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function completePurchase(Transaction $transaction): RequestResponseInterface
+    {
+        $request = $this->createRequest($transaction);
+        $request['transactionReference'] = $transaction->reference;
+        $completeRequest = $this->prepareCompletePurchaseRequest($request);
+
+        return $this->performRequest($completeRequest, $transaction);
     }
 
     /**
@@ -193,5 +208,20 @@ class Gateway extends OffsiteGateway
     protected function getGatewayClassName(): ?string
     {
         return '\\'.OmnipayGateway::class;
+    }
+
+    /**
+     * Prepare a complete purchase request from request data.
+     *
+     * @param mixed $request
+     *
+     * @return RequestInterface
+     */
+    protected function prepareCompletePurchaseRequest(mixed $request): RequestInterface
+    {
+        /** @var OmnipayGateway */
+        $gateway = $this->gateway();
+
+        return $gateway->getPurchaseStatus($request);
     }
 }
